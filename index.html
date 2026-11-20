@@ -638,7 +638,7 @@ exports.init = init;
 
   return exports;
 })());
-            const staticryptConfig = {"staticryptEncryptedMsgUniqueVariableName":"5027e247c3f2aef13e8e4e3c3ae03bbef7e7ede99aa832c710a9291277a40faab682f7eb5184be54a0d2d8034d49c9daa01a6a2b56d920371d47586a56dc1abab995eec4e5a1a9a77f85bee3997296b524811c4aad3f7b7f9efa6f5395b2281e10cb69b39dad27f9dc3300da0262d5d556ef53f59b4877d4bf91107f7e1f47c57cf2b007e97806d32fdd19a3584878c18bea720290c6c0cf5a5b81a3ab71aab6a339c64c420285b366b217ada3213ba6461765ca7559957ca514f08949cb8bf1080c4fb2f6b7236d9053f28da30f34bca9793903e84e0b4baef521dd7f33ece566534ecbaf03f2b229673fdd6c9abbcd1c9c922630f28ad2141ca052b342eb566aadd68c7a3257bd5ae4e88932b76def573e60ea1810fe84a0b3a11f9be2e0413b3321a996a32adbd00eba6084a11712be985300dff038565f757599dad7a04a13c26bc9014b8f1056901f65db032701f191e57bf64765fe06239162e721ee4ef923504bce3f69cc6adc8d2c1bcfee3d","isRememberEnabled":true,"rememberDurationInDays":30,"staticryptSaltUniqueVariableName":"a3f1c07be94d52681f0c3a7d5e9b2c84"};
+            const staticryptConfig = {"staticryptEncryptedMsgUniqueVariableName":"c3bc2d9015abc82a754c3f643faeee0c52d40c577ab8e7670dd42a579b5dca6bdec06a8e56e749697739bc7d4896ef087da9bd646fdd58023f218e85885b34055bd28cfffab993319795c0e4c180f07708043a2acc5a89a54ced57f3d541c266cdc9f630c3b4348bc65cbb81e82cb575040b16a7c9c85e552ee63b3966c1cae9cf351cc346c8b5fd2913a4f5abe0c798c9f399758f8aa7a9a730a43d25eb1ac93fb562e1a7648f7d32032b53f16c7e2674a6b2d00a604823158a379137d5664543c253bbb1b26eb669da6c07c6b0c0ee7ecb903181b0511e7c796701bd96cf1443fa874f2479295b3248380ff906d2bcde51b1e6a522f6357e4c809e3e73af021715def13bbf138cbe6979e192dbb7efcc150db69fe4e83851672ac151e72a9d5d0ad0678801643c4aad10d1b3986806794b8d5cfeb116383632fd633321e1e24bd59a9fd1b637c0545aebd1c96112bf33e0227c4f709e1178d5d89fda306917ec67d5983d78f30bb15d0ff18abb0a30","isRememberEnabled":true,"rememberDurationInDays":30,"staticryptSaltUniqueVariableName":"a3f1c07be94d52681f0c3a7d5e9b2c84"};
             const templateConfig = {
                 rememberExpirationKey: "staticrypt_expiration",
                 rememberPassphraseKey: "staticrypt_passphrase",
@@ -649,11 +649,16 @@ exports.init = init;
 
             // The key comes from the shared link (#staticrypt_pwd=<hash>) or, on a later visit, from
             // localStorage. Nothing decrypts until the viewer acknowledges this isn't the real site.
+            // A key from the link is saved before it's removed from the address bar, so a reload or a
+            // restored tab before the click still has it.
             const fromLink = new URLSearchParams(location.hash.slice(1)).get("staticrypt_pwd");
-            if (fromLink) history.replaceState(null, "", location.pathname + location.search);
+            if (fromLink) {
+                localStorage.setItem(templateConfig.rememberPassphraseKey, fromLink);
+                localStorage.setItem(templateConfig.rememberExpirationKey, String(Date.now() + staticryptConfig.rememberDurationInDays * 864e5));
+                history.replaceState(null, "", location.pathname + location.search);
+            }
             const expires = Number(localStorage.getItem(templateConfig.rememberExpirationKey) || 0);
-            const remembered = expires > Date.now() ? localStorage.getItem(templateConfig.rememberPassphraseKey) : null;
-            const key = fromLink || remembered;
+            const key = expires > Date.now() ? localStorage.getItem(templateConfig.rememberPassphraseKey) : null;
             const button = document.getElementById("qd-enter");
             const error = document.getElementById("qd-error");
 
